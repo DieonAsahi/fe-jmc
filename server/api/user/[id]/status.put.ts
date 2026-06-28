@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "Field disabled wajib diisi" })
   }
 
-  await pool.execute("UPDATE user SET disabled = ? WHERE id = ?", [body.disabled ? 1 : 0, id])
+  await pool.query("UPDATE user SET disabled = ? WHERE id = ?", [body.disabled ? 1 : 0, id])
 
   await logActivity(
     event,

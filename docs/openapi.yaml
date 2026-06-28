@@ -1,27 +1,323 @@
 openapi: 3.0.3
 
 info:
-  title: HR Management API
+  title: API Management Pegawai
   version: 1.0.0
   description: |
-    API Documentation for Transport Allowance Module.
+    Dokumentasi API Modul Perhitungan Tunjangan Transport.
+
+    API ini digunakan untuk melakukan pengaturan tarif
+    tunjangan transport, proses perhitungan tunjangan,
+    melihat daftar hasil perhitungan, serta melihat detail
+    tunjangan transport pegawai.
 
 servers:
   - url: http://localhost:3000/api
+    description: Server Development
 
 tags:
-  - name: Transport Allowance
-  - name: Transport Setting
+  - name: Setting Tunjangan
+    description: Endpoint untuk pengaturan tarif tunjangan transport.
+
+  - name: Tunjangan Transport
+    description: Endpoint untuk proses perhitungan dan pengambilan data tunjangan transport.
 
 components:
-
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
 
+  schemas:
+    ResponseBerhasil:
+      type: object
+
+      properties:
+        success:
+          type: boolean
+          example: true
+
+        message:
+          type: string
+          example: Berhasil
+
+    ResponseError:
+      type: object
+
+      properties:
+        success:
+          type: boolean
+          example: false
+
+        message:
+          type: string
+          example: Terjadi kesalahan
+
 security:
   - bearerAuth: []
 
 paths:
+  /tunjangan/setting:
+    get:
+      tags:
+        - Setting Tunjangan
+
+      summary: Mengambil data setting tunjangan
+
+      description: |
+        Mengambil setting tunjangan transport yang sedang aktif.
+
+      responses:
+        "200":
+          description: Data berhasil diambil.
+
+          content:
+            application/json:
+              example:
+                success: true
+
+                data:
+                  id: 1
+                  base_fare: 5000
+                  berlaku_mulai: "2026-01-01"
+                  min_km: 5
+                  max_km: 25
+
+        "401":
+          description: Token tidak valid atau belum login.
+
+          content:
+            application/json:
+              example:
+                success: false
+                message: Unauthorized
+
+    put:
+      tags:
+        - Setting Tunjangan
+
+      summary: Menyimpan setting tunjangan
+
+      description: |
+        Menambahkan atau memperbarui setting tunjangan transport.
+
+      requestBody:
+        required: true
+
+        content:
+          application/json:
+            schema:
+              type: object
+
+              required:
+                - base_fare
+                - berlaku_mulai
+                - min_km
+                - max_km
+
+              properties:
+                base_fare:
+                  type: integer
+                  example: 5000
+
+                berlaku_mulai:
+                  type: string
+                  format: date
+                  example: "2026-01-01"
+
+                min_km:
+                  type: integer
+                  example: 5
+
+                max_km:
+                  type: integer
+                  example: 25
+
+      responses:
+        "200":
+          description: Setting berhasil disimpan.
+
+          content:
+            application/json:
+              example:
+                success: true
+                message: Setting tunjangan berhasil disimpan.
+
+        "400":
+          description: Validasi gagal.
+
+          content:
+            application/json:
+              example:
+                success: false
+                message: Data yang dikirim tidak lengkap.
+
+        "401":
+          description: Unauthorized
+
+  /tunjangan/transport:
+    get:
+      tags:
+        - Tunjangan Transport
+
+      summary: Mengambil daftar tunjangan transport
+
+      description: |
+        Mengambil daftar hasil perhitungan tunjangan transport berdasarkan tahun.
+
+      parameters:
+        - name: tahun
+          in: query
+          required: false
+
+          schema:
+            type: integer
+            example: 2026
+
+      responses:
+        "200":
+          description: Data berhasil diambil.
+
+          content:
+            application/json:
+              example:
+                success: true
+
+                data:
+                  - id: "2026-06"
+
+                    bulan: "Juni 2026"
+
+                    total_penerima: 18
+
+                    total_nominal: 8250000
+
+                    sudah_dihitung: true
+
+        "401":
+          description: Unauthorized
+
+  /tunjangan/transport/hitung:
+    post:
+      tags:
+        - Tunjangan Transport
+
+      summary: Menghitung tunjangan transport
+
+      description: |
+        Melakukan proses perhitungan tunjangan transport
+        untuk bulan yang dipilih.
+
+      requestBody:
+        required: false
+
+        content:
+          application/json:
+            schema:
+              type: object
+
+              properties:
+                bulan:
+                  type: integer
+                  example: 6
+
+                tahun:
+                  type: integer
+                  example: 2026
+
+      responses:
+        "200":
+          description: Perhitungan berhasil dilakukan.
+
+          content:
+            application/json:
+              example:
+                success: true
+                message: Perhitungan tunjangan berhasil dilakukan.
+
+        "400":
+          description: Data setting belum tersedia.
+
+          content:
+            application/json:
+              example:
+                success: false
+                message: Setting tunjangan belum tersedia.
+
+        "500":
+          description: Terjadi kesalahan pada server.
+
+          content:
+            application/json:
+              example:
+                success: false
+                message: Terjadi kesalahan pada server.
+
+  /tunjangan/transport/{id}:
+    get:
+      tags:
+        - Tunjangan Transport
+
+      summary: Mengambil detail hasil perhitungan
+
+      description: |
+        Mengambil detail seluruh penerima tunjangan
+        berdasarkan bulan yang dipilih.
+
+      parameters:
+        - name: id
+          in: path
+          required: true
+
+          schema:
+            type: string
+            example: "2026-06"
+
+      responses:
+        "200":
+          description: Detail berhasil diambil.
+
+          content:
+            application/json:
+              example:
+                success: true
+
+                data:
+                  bulan: Juni
+
+                  tahun: 2026
+
+                  penerima:
+                    - id: 1
+                      nama: Budi Santoso
+                      km: 15
+                      hari_kerja: 22
+                      nominal: 1650000
+
+                    - id: 2
+                      nama: Andi Saputra
+                      km: 18
+                      hari_kerja: 24
+                      nominal: 2160000
+
+        "400":
+          description: Format ID tidak valid.
+
+          content:
+            application/json:
+              example:
+                success: false
+                message: Format ID tidak valid.
+
+        "404":
+          description: Data tidak ditemukan.
+
+          content:
+            application/json:
+              example:
+                success: false
+                message: Data tidak ditemukan.
+
+        "401":
+          description: Unauthorized
