@@ -57,7 +57,15 @@ export default defineNuxtConfig({
 
   vite: {
     optimizeDeps: {
-      include: ["apexcharts"],
+      include: [
+        "@tabler/core/dist/js/tabler.min.js",
+        "@tabler/icons-vue",
+        "@vue/devtools-core",
+        "@vue/devtools-kit",
+        "apexcharts",
+        "jquery",
+        "vue3-apexcharts",
+      ],
     },
   },
 });

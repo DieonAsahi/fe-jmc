@@ -1,5 +1,5 @@
 import { defineEventHandler, readBody, createError } from "h3";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import pool from "../../utils/db";
 import { signToken } from "../../utils/jwt";
 
@@ -20,6 +20,9 @@ export default defineEventHandler(async (event) => {
      WHERE (u.username = ? OR u.email = ? OR p.nomor_hp = ?) AND u.disabled = 0`,
     [username, username, username],
   );
+
+  console.log("=== DATA USER DARI DB ===");
+  console.log(rows[0]);
 
   if (rows.length === 0) {
     throw createError({ statusCode: 401, message: "Pengguna tidak ditemukan" });

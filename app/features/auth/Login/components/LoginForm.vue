@@ -22,17 +22,29 @@
 
     <div class="mb-2">
       <label class="form-check">
-        <input v-model="form.remember" type="checkbox" class="form-check-input" />
+        <input
+          v-model="form.remember"
+          type="checkbox"
+          class="form-check-input"
+        />
         <span class="form-check-label">Remember Me</span>
       </label>
     </div>
 
     <div class="mb-2">
-      <div class="g-recaptcha" :data-sitekey="siteKey" data-callback="recaptchaCallback"></div>
+      <div
+        class="g-recaptcha"
+        :data-sitekey="siteKey"
+        data-callback="recaptchaCallback"
+      ></div>
     </div>
 
     <div class="d-grid mt-4">
-      <button class="btn btn-primary text-uppercase shadow py-3" type="submit" :disabled="loading">
+      <button
+        class="btn btn-primary text-uppercase shadow py-3"
+        type="submit"
+        :disabled="loading"
+      >
         {{ loading ? "Memproses..." : "Masuk" }}
       </button>
     </div>
@@ -42,31 +54,49 @@
 </template>
 
 <script setup>
-const config = useRuntimeConfig()
-const { login } = useAuth()
-const router = useRouter()
+const config = useRuntimeConfig();
+const { login } = useAuth();
+const router = useRouter();
 
-const siteKey = config.public.recaptchaSiteKey
-const loading = ref(false)
-const error = ref("")
+const siteKey = config.public.recaptchaSiteKey;
+const loading = ref(false);
+const error = ref("");
 
 const form = reactive({
   username: "",
   password: "",
   remember: false,
-})
+});
+
+useHead({
+  script: [
+    {
+      src: "https://www.google.com/recaptcha/api.js",
+      async: true,
+      defer: true,
+    },
+  ],
+});
 
 async function handleLogin() {
-  loading.value = true
-  error.value = ""
+  loading.value = true;
+  error.value = "";
 
   try {
-    await login(form.username, form.password, form.remember)
-    router.push("/")
+    const captchaToken = window.grecaptcha
+      ? window.grecaptcha.getResponse()
+      : "";
+
+    if (!captchaToken) {
+      throw new Error("Silakan centang reCAPTCHA terlebih dahulu.");
+    }
+
+    await login(form.username, form.password, form.remember, captchaToken);
+    router.push("/");
   } catch (err) {
-    error.value = err.message || "Login gagal"
+    error.value = err.message || "Login gagal";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 </script>
