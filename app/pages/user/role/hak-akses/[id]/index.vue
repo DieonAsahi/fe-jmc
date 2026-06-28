@@ -5,13 +5,7 @@
         <div class="row g-3">
           <div class="col-md-4 col-lg-3">
             <label class="form-label">Nama Role</label>
-            <input
-              :value="roleData?.nama_role"
-              type="text"
-              class="form-control"
-              readonly
-              disabled
-            />
+            <input :value="roleData?.nama_role" type="text" class="form-control" readonly disabled />
           </div>
         </div>
       </div>
@@ -31,16 +25,9 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-if="loading">
-              <td colspan="7" class="text-center py-4">Memuat data...</td>
-            </tr>
-            <tr v-else-if="!roleData" colspan="7" class="text-center py-4">
-              Role tidak ditemukan
-            </tr>
-            <tr
-              v-for="(item, index) in roleData?.permissions || []"
-              :key="item.id"
-            >
+            <tr v-if="loading"><td colspan="7" class="text-center py-4">Memuat data...</td></tr>
+            <tr v-else-if="!roleData" colspan="7" class="text-center py-4">Role tidak ditemukan</tr>
+            <tr v-for="(item, index) in roleData?.permissions || []" :key="item.id">
               <td class="text-center">{{ index + 1 }}</td>
               <td>{{ item.modul_fitur }}</td>
               <td class="text-center">
@@ -63,22 +50,19 @@
 </template>
 
 <script setup>
-definePageMeta({ title: "Hak Akses", middleware: "auth" });
-useSeoMeta({ title: "Hak Akses" });
-import { IconCircleCheckFilled, IconXboxXFilled } from "@tabler/icons-vue";
-const { get } = useApi();
-const route = useRoute();
+definePageMeta({ title: "Hak Akses", middleware: "auth" })
+useSeoMeta({ title: "Hak Akses" })
+import { IconCircleCheckFilled, IconXboxXFilled } from "@tabler/icons-vue"
+const { get } = useApi()
+const route = useRoute()
 
-const roleData = ref(null);
-const loading = ref(true);
+const roleData = ref(null)
+const loading = ref(true)
 
 onMounted(async () => {
   try {
-    const res = await get(`/role/${route.params.id}`);
-    roleData.value = res.data;
-  } catch {
-  } finally {
-    loading.value = false;
-  }
-});
+    const res = await get(`/role/${route.params.id}`)
+    roleData.value = res.data
+  } catch {} finally { loading.value = false }
+})
 </script>

@@ -1,10 +1,10 @@
-import { defineEventHandler, createError } from "h3";
-import pool from "../../utils/db";
+import { defineEventHandler, createError } from "h3"
+import pool from "../../utils/db"
 
 export default defineEventHandler(async (event) => {
-  const auth = event.context.auth;
+  const auth = event.context.auth
   if (!auth) {
-    throw createError({ statusCode: 401, message: "Unauthorized" });
+    throw createError({ statusCode: 401, message: "Unauthorized" })
   }
 
   const [rows] = await pool.query(
@@ -14,11 +14,11 @@ export default defineEventHandler(async (event) => {
      LEFT JOIN user_role ur ON u.id_role = ur.id
      WHERE u.id = ?`,
     [auth.id],
-  );
+  )
 
-  const user = (rows as any[])[0];
+  const user = (rows as any[])[0]
   if (!user) {
-    throw createError({ statusCode: 404, message: "User tidak ditemukan" });
+    throw createError({ statusCode: 404, message: "User tidak ditemukan" })
   }
 
   return {
@@ -32,5 +32,5 @@ export default defineEventHandler(async (event) => {
       id_role: user.id_role,
       last_login: user.last_login,
     },
-  };
-});
+  }
+})

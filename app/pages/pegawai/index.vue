@@ -25,25 +25,16 @@ const currentUserRole = computed(() =>
 
 const canCRUD = computed(() => currentUserRole.value === 3);
 
-watch(
-  currentUserRole,
-  (newRole) => {
-    if (newRole === 1) {
-      navigateTo("/dashboard");
-    }
-  },
-  { immediate: true },
-); 
-
 onMounted(async () => {
-  // Hanya ambil data jika user sudah terdeteksi DAN bukan superadmin
-  if (currentUserRole.value !== 1 && currentUserRole.value !== null) {
-    await fetchData();
+  if (currentUserRole.value === 1) {
+    return navigateTo("/dashboard");
   }
+
+  await fetchData();
 });
 
 onActivated(async () => {
-  if (currentUserRole.value !== 1 && currentUserRole.value !== null) {
+  if (currentUserRole.value !== 1) {
     await fetchData();
   }
 });

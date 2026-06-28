@@ -1,39 +1,30 @@
-import { defineEventHandler, readBody, createError } from "h3";
-import pool from "../utils/db";
-import { logActivity } from "../utils/activity";
+import { defineEventHandler, readBody, createError } from "h3"
+import pool from "../utils/db"
+import { logActivity } from "../utils/activity"
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event);
-  const auth = event.context.auth;
+  const body = await readBody(event)
+  const auth = event.context.auth
 
   if (!body.nip || !body.nama_pegawai) {
-    throw createError({ statusCode: 400, message: "NIP dan Nama wajib diisi" });
+    throw createError({ statusCode: 400, message: "NIP dan Nama wajib diisi" })
   }
   if (!/^\d{8,}$/.test(body.nip)) {
-    throw createError({
-      statusCode: 400,
-      message: "NIP minimal 8 digit angka",
-    });
+    throw createError({ statusCode: 400, message: "NIP minimal 8 digit angka" })
   }
   if (body.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)) {
-    throw createError({ statusCode: 400, message: "Format email tidak valid" });
+    throw createError({ statusCode: 400, message: "Format email tidak valid" })
   }
   if (body.nomor_hp && !/^\+62[0-9]{6,15}$/.test(body.nomor_hp)) {
-    throw createError({
-      statusCode: 400,
-      message: "Format nomor HP harus internasional (+62xxx)",
-    });
+    throw createError({ statusCode: 400, message: "Format nomor HP harus internasional (+62xxx)" })
   }
   if (body.nama_pegawai && !/^[a-zA-Z0-9\' ]+$/.test(body.nama_pegawai)) {
-    throw createError({
-      statusCode: 400,
-      message: "Nama hanya boleh huruf, angka, petik, dan spasi",
-    });
+    throw createError({ statusCode: 400, message: "Nama hanya boleh huruf, angka, petik, dan spasi" })
   }
 
-  const conn = await pool.getConnection();
+  const conn = await pool.getConnection()
   try {
-    await conn.beginTransaction();
+    await conn.beginTransaction()
 
     const [result] = await conn.execute(
       `INSERT INTO pegawai (foto_pegawai, nip, nama_pegawai, email, nomor_hp, tempat_lahir,
@@ -60,50 +51,33 @@ export default defineEventHandler(async (event) => {
         body.status || "Aktif",
         body.jenis_kontrak || "PKWTT",
       ],
-    );
+    )
 
-    const idPegawai = (result as any).insertId;
+    const idPegawai = (result as any).insertId
 
     if (body.pendidikan && Array.isArray(body.pendidikan)) {
       for (const p of body.pendidikan) {
         if (p.tingkat_pendidikan || p.nama_sekolah) {
           await conn.execute(
             "INSERT INTO pegawai_pendidikan (id_pegawai, tingkat_pendidikan, nama_sekolah, tahun_lulus) VALUES (?, ?, ?, ?)",
-            [
-              idPegawai,
-              p.tingkat_pendidikan,
-              p.nama_sekolah,
-              p.tahun_lulus || null,
-            ],
-          );
+            [idPegawai, p.tingkat_pendidikan, p.nama_sekolah, p.tahun_lulus || null],
+          )
         }
       }
     }
 
-    await conn.commit();
+    await conn.commit()
 
-    await logActivity(
-      event,
-      "Tambah Pegawai",
-      `Menambahkan pegawai ${body.nama_pegawai} (NIP: ${body.nip})`,
-      auth?.id,
-    );
+    await logActivity(event, "Tambah Pegawai", `Menambahkan pegawai ${body.nama_pegawai} (NIP: ${body.nip})`, auth?.id)
 
-    return {
-      success: true,
-      message: "Pegawai berhasil ditambahkan",
-      data: { id: idPegawai },
-    };
+    return { success: true, message: "Pegawai berhasil ditambahkan", data: { id: idPegawai } }
   } catch (err: any) {
-    await conn.rollback();
+    await conn.rollback()
     if (err.code === "ER_DUP_ENTRY") {
-      throw createError({
-        statusCode: 409,
-        message: "NIP atau Email sudah terdaftar",
-      });
+      throw createError({ statusCode: 409, message: "NIP atau Email sudah terdaftar" })
     }
-    throw createError({ statusCode: 500, message: "Gagal menyimpan data" });
+    throw createError({ statusCode: 500, message: "Gagal menyimpan data" })
   } finally {
-    conn.release();
+    conn.release()
   }
-});
+})

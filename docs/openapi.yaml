@@ -1,0 +1,27 @@
+openapi: 3.0.3
+
+info:
+  title: HR Management API
+  version: 1.0.0
+  description: |
+    API Documentation for Transport Allowance Module.
+
+servers:
+  - url: http://localhost:3000/api
+
+tags:
+  - name: Transport Allowance
+  - name: Transport Setting
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []
+
+paths:

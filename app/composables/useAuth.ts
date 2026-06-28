@@ -1,10 +1,3 @@
-interface LoginResponse {
-  token: string;
-  user: any;
-  permissions?: any[];
-  data?: any;
-}
-
 export function useAuth() {
   const { get, post, getToken, setToken } = useApi()
   const user = useState<any>("auth-user", () => null)
@@ -21,7 +14,7 @@ export function useAuth() {
     }
 
     try {
-      const res = await get<any>("/auth/verify") as any
+      const res = await get<any>("/auth/verify")
       user.value = res.data
       permissions.value = res.permissions || []
       isLoggedIn.value = true
@@ -36,7 +29,7 @@ export function useAuth() {
   }
 
   async function login(username: string, password: string, remember: boolean = false, recaptchaToken?: string) {
-    const res = await post<any>("/auth/login", { username, password, recaptchaToken }) as any
+    const res = await post<any>("/auth/login", { username, password, recaptchaToken })
 
     setToken(res.token)
     if (remember) {

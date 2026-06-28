@@ -53,7 +53,7 @@
           class="offcanvas-body p-3 p-lg-0 flex-column flex-grow-1 overflow-auto"
         >
           <ul class="navbar-nav align-items-start pt-lg-3">
-            <template v-for="item in menuItems">
+            <template v-for="item in visibleMenuItems">
               <!-- Menu dengan children (dropdown) -->
               <li
                 :key="item.title"
@@ -101,7 +101,7 @@
               </li>
 
               <!-- Menu biasa (tanpa children) -->
-              <li v-else class="nav-item" :key="item.title + '-single'">
+              <li v-else class="nav-item" :key="item.title">
                 <NuxtLink
                   :to="item.to"
                   class="nav-link"
@@ -123,13 +123,33 @@
 
 <script setup>
 import { menuItems } from "~/data/menu.js";
+import { useAuth } from "~/composables/useAuth";
 
-const appName = "Admin";
+const { hasModuleAccess } = useAuth();
+
 const route = useRoute();
 const config = useRuntimeConfig();
 
 // Dropdown yang sedang terbuka
 const openDropdowns = ref([]);
+
+// Filter menu items berdasarkan permission user (tanpa mutasi original)
+const visibleMenuItems = computed(() => {
+  return menuItems.reduce((acc, item) => {
+    if (item.modulFitur && !hasModuleAccess(item.modulFitur)) return acc;
+    if (item.children) {
+      const visibleChildren = item.children.filter((child) => {
+        if (child.modulFitur) return hasModuleAccess(child.modulFitur);
+        return true;
+      });
+      if (visibleChildren.length === 0) return acc;
+      acc.push({ ...item, children: visibleChildren });
+    } else {
+      acc.push(item);
+    }
+    return acc;
+  }, []);
+});
 
 // Cek apakah route aktif (exact match untuk '/', startsWith untuk lainnya)
 const isActive = (path) => {

@@ -107,6 +107,7 @@ onMounted(() => {
             googleCaptchaReady.value = true
           })
         } catch (e) {
+          // render failed
         }
       }
       retries++
@@ -146,6 +147,7 @@ async function handleLogin() {
       res = await login(form.username, form.password, form.remember)
     }
 
+    // Set cookie di client agar middleware langsung bisa membacanya
     if (res?.token) {
       tokenCookie.value = res.token
     }
