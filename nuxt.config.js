@@ -1,5 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  ssr: false,
+
   future: {
     compatibilityVersion: 4,
   },
@@ -23,27 +25,18 @@ export default defineNuxtConfig({
       openAPI: true,
     },
     externals: {
-      external: ["xlsx"]
-    }
+      external: ["xlsx"],
+    },
   },
 
-  css: [
-    "@tabler/core/dist/css/tabler.min.css",
-    "~/assets/css/backend.css",
-  ],
+  css: ["@tabler/core/dist/css/tabler.min.css", "~/assets/css/backend.css"],
 
   app: {
     head: {
       charset: "utf-8",
       viewport: "width=device-width, initial-scale=1",
       link: [{ rel: "icon", type: "image/x-icon", href: "/favicon.png" }],
-      script: [
-        {
-          src: "https://www.google.com/recaptcha/api.js",
-          async: true,
-          defer: true,
-        },
-      ],
+      script: [],
     },
   },
 
@@ -57,15 +50,7 @@ export default defineNuxtConfig({
 
   vite: {
     optimizeDeps: {
-      include: [
-        "@tabler/core/dist/js/tabler.min.js",
-        "@tabler/icons-vue",
-        "@vue/devtools-core",
-        "@vue/devtools-kit",
-        "apexcharts",
-        "jquery",
-        "vue3-apexcharts",
-      ],
+      include: ["apexcharts"],
     },
   },
 });

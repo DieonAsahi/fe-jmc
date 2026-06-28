@@ -16,7 +16,6 @@ onMounted(() => {
 
 <template>
   <div class="box col-md-8 p-4">
-    <!-- Logo -->
     <div class="d-flex gap-3 mb-4 align-items-center">
       <div class="logo">
         <img
@@ -35,7 +34,6 @@ onMounted(() => {
 
     <p>Selamat Datang, silahkan masukkan username dan password anda!</p>
 
-    <!-- Login Form -->
     <LoginForm />
   </div>
 </template>

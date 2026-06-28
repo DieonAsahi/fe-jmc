@@ -1,89 +1,94 @@
-import { useRuntimeConfig } from "#imports";
+const BASE_URL = "/api"
+let _token: string | null = null
 
-const BASE_URL = "/api";
 export function useApi() {
-  const config = useRuntimeConfig();
+  const config = useRuntimeConfig()
 
   function getToken(): string | null {
-    return localStorage.getItem("token") || sessionStorage.getItem("token");
+    return _token
   }
 
-  // UBAH tipe kembalian Promise di baris ini dengan menambahkan: & T
+  function setToken(token: string | null) {
+    _token = token
+  }
+
   async function request<T = any>(
     endpoint: string,
     options: RequestInit = {},
-  ): Promise<{ success: boolean; message?: string; pagination?: any } & T> {
-    // <- KUNCI UTAMA
-    const token = getToken();
-    const headers = new Headers(options.headers);
+  ): Promise<{ success: boolean; message?: string; data?: T; pagination?: any }> {
+    const token = getToken()
+    const headers: Record<string, string> = {
+      ...(options.headers as Record<string, string>),
+    }
 
     if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
+      headers["Authorization"] = `Bearer ${token}`
     }
 
     if (!(options.body instanceof FormData)) {
-      headers.set("Content-Type", "application/json");
+      headers["Content-Type"] = "application/json"
     }
 
-    const res = await fetch(`${BASE_URL}${endpoint}`, {
-      ...options,
-      headers: Object.fromEntries(headers.entries()),
-    });
+    let res: Response
+    try {
+      res = await fetch(`${BASE_URL}${endpoint}`, {
+        ...options,
+        headers,
+      })
+    } catch {
+      throw new Error("Gagal terhubung ke server, periksa koneksi Anda")
+    }
 
-    const contentType = res.headers.get("content-type") || "";
+    const contentType = res.headers.get("content-type") || ""
 
     if (contentType.includes("application/json")) {
-      const json = await res.json();
+      const json = await res.json()
       if (!res.ok) {
-        throw new Error(json.message || `Error ${res.status}`);
+        throw new Error(json.message || `Error ${res.status}`)
       }
-      return json; // TypeScript akan otomatis mencocokkan ini dengan tipe data & T
+      return json
     }
 
-    if (
-      contentType.includes("application/pdf") ||
-      contentType.includes("application/vnd.openxmlformats")
-    ) {
-      const blob = await res.blob();
-      const disposition = res.headers.get("content-disposition") || "";
-      const filename =
-        disposition.split("filename=")[1]?.replace(/"/g, "") || "download";
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.click();
-      window.URL.revokeObjectURL(url);
-      return { success: true } as any;
+    if (contentType.includes("application/pdf") || contentType.includes("application/vnd.openxmlformats")) {
+      const blob = await res.blob()
+      const disposition = res.headers.get("content-disposition") || ""
+      const filename = disposition.split("filename=")[1]?.replace(/"/g, "") || "download"
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = filename
+      a.click()
+      window.URL.revokeObjectURL(url)
+      return { success: true }
     }
 
     if (!res.ok) {
-      throw new Error(`Error ${res.status}`);
+      throw new Error(`Error ${res.status}`)
     }
 
-    return { success: true } as any;
+    return { success: true }
   }
 
   return {
     getToken,
-    // Pastikan <T> diteruskan ke fungsi request<T> di bawah ini:
+    setToken,
     get<T = any>(endpoint: string) {
-      return request<T>(endpoint, { method: "GET" });
+      return request<T>(endpoint, { method: "GET" })
     },
     post<T = any>(endpoint: string, body?: any) {
       return request<T>(endpoint, {
         method: "POST",
         body: body instanceof FormData ? body : JSON.stringify(body),
-      });
+      })
     },
     put<T = any>(endpoint: string, body?: any) {
       return request<T>(endpoint, {
         method: "PUT",
         body: JSON.stringify(body),
-      });
+      })
     },
     delete<T = any>(endpoint: string) {
-      return request<T>(endpoint, { method: "DELETE" });
+      return request<T>(endpoint, { method: "DELETE" })
     },
-  };
+  }
 }

@@ -101,7 +101,7 @@
               </li>
 
               <!-- Menu biasa (tanpa children) -->
-              <li v-else class="nav-item" :key="item.title">
+              <li v-else class="nav-item" :key="item.title + '-single'">
                 <NuxtLink
                   :to="item.to"
                   class="nav-link"

@@ -1,39 +1,66 @@
-import { defineEventHandler, getQuery } from "h3"
-import pool from "../utils/db"
-import { parsePagination } from "../utils/helpers"
+import { defineEventHandler, getQuery, createError } from "h3";
+import pool from "../utils/db";
 
 export default defineEventHandler(async (event) => {
-  const query = getQuery(event)
-  const { page, limit, offset } = parsePagination(query)
+  const query = getQuery(event);
+  const page = parseInt(query.page as string) || 1;
+  const limit = parseInt(query.limit as string) || 15;
+  const search = (query.search as string) || "";
 
-  let where = "WHERE 1=1"
-  const params: any[] = []
+  const offset = (page - 1) * limit;
 
-  const joinQuery = "LEFT JOIN user u ON a.created_by = u.id"
+  try {
+    let whereClause = "WHERE 1=1";
+    const queryParams: any[] = [];
 
-  if (query.search) {
-    where += " AND (a.title LIKE ? OR a.content LIKE ? OR u.nama LIKE ?)"
-    const s = `%${query.search}%`
-    params.push(s, s, s)
+    if (search) {
+      whereClause +=
+        " AND (u.username LIKE ? OR a.title LIKE ? OR a.content LIKE ? OR a.ip LIKE ?)";
+      const searchPattern = `%${search}%`;
+      queryParams.push(
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+      );
+    }
+
+    const countQuery = `
+      SELECT COUNT(*) as total 
+      FROM activities a
+      LEFT JOIN user u ON a.created_by = u.id
+      ${whereClause}
+    `;
+    const [countRows]: any = await pool.query(countQuery, queryParams);
+    const total = countRows[0].total;
+    const totalPages = Math.ceil(total / limit);
+
+    const dataQuery = `
+      SELECT a.*, u.username as user_name 
+      FROM activities a
+      LEFT JOIN user u ON a.created_by = u.id
+      ${whereClause}
+      ORDER BY a.created_at DESC 
+      LIMIT ? OFFSET ?
+    `;
+
+    const finalParams = [...queryParams, limit, offset];
+    const [rows]: any = await pool.query(dataQuery, finalParams);
+
+    return {
+      success: true,
+      data: rows,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+      },
+    };
+  } catch (error: any) {
+    throw createError({
+      statusCode: 500,
+      message: "Gagal mengambil data log aktivitas: " + error.message,
+    });
   }
-
-  const countRows = (await pool.query(`SELECT COUNT(*) as total FROM activities a ${joinQuery} ${where}`, params))[0] as any[]
-  const total = countRows[0].total
-
-  const [rows] = await pool.query(
-    `SELECT a.id, a.title, a.content, a.ip, a.url, a.browser, a.platform, a.created_at,
-            u.nama as user_name
-     FROM activities a
-     ${joinQuery}
-     ${where}
-     ORDER BY a.created_at DESC
-     LIMIT ? OFFSET ?`,
-    [...params, limit, offset],
-  )
-
-  return {
-    success: true,
-    data: rows,
-    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
-  }
-})
+});

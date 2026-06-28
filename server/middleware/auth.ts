@@ -1,38 +1,49 @@
-import { verifyToken } from "../utils/jwt"
-import { defineEventHandler, getHeader, createError } from "h3"
-import pool from "../utils/db"
+import { defineEventHandler, getCookie, getHeader, createError } from "h3";
+import jwt from "jsonwebtoken";
+import process from "node:process";
 
-const publicRoutes = ["/api/auth/login", "/api/auth/logout", "/api/auth/verify"]
+export default defineEventHandler((event) => {
+  const routerPath = event.node.req.url || "";
 
-export default defineEventHandler(async (event) => {
-  if (!event.path.startsWith("/api/")) return
-  if (publicRoutes.includes(event.path)) return
+  const isPublicRoute =
+    routerPath.startsWith("/api/auth") ||
+    routerPath.includes("login") ||
+    routerPath.includes("captcha") ||
+    routerPath.includes("recaptcha") ||
+    routerPath.includes("verify");
 
-  const authHeader = getHeader(event, "authorization")
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    throw createError({ statusCode: 401, message: "Unauthorized" })
+  if (!routerPath.startsWith("/api") || isPublicRoute) {
+    return;
   }
 
-  const token = authHeader.split(" ")[1]
-  try {
-    const decoded = verifyToken(token) as any
+  let token = getCookie(event, "auth_session");
 
-    const [rows] = await pool.query(
-      `SELECT u.id, u.disabled, ur.nama_role
-       FROM user u
-       LEFT JOIN user_role ur ON u.id_role = ur.id
-       WHERE u.id = ?`,
-      [decoded.id],
-    )
-
-    const user = (rows as any[])[0]
-    if (!user || user.disabled) {
-      throw createError({ statusCode: 401, message: "Akun dinonaktifkan" })
+  if (!token) {
+    const authHeader = getHeader(event, "authorization");
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.substring(7);
     }
-
-    event.context.auth = { ...decoded, nama_role: user.nama_role }
-  } catch (err: any) {
-    if (err.statusCode) throw err
-    throw createError({ statusCode: 401, message: "Token invalid atau expired" })
   }
-})
+
+  if (!token) {
+    throw createError({
+      statusCode: 401,
+      message: "Akses ditolak. Silakan login terlebih dahulu.",
+    });
+  }
+
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "rahasia_superadmin_fwdjmc",
+    );
+
+    event.context.user = decoded;
+    event.context.auth = decoded;
+  } catch (error) {
+    throw createError({
+      statusCode: 401,
+      message: "Sesi Anda telah berakhir. Silakan login kembali.",
+    });
+  }
+});
