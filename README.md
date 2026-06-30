@@ -10,6 +10,13 @@ Database awal yang diberikan hanya berisi struktur beberapa tabel utama tanpa da
 
 ---
 
+# Akses
+- username : superadmin, password : superadmin123
+- username : manager_hrd, password : manager123
+- username : admin_hrd, password : adminhrd123
+
+---
+
 # Tech Stack
 
 - Nuxt 3
